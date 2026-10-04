@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rock Paper Scissors</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --card: #ffffff;
+      --text: #1f2328;
+      --muted: #6b7280;
+      --border: #e3ded3;
+      --accent: #4f46e5;
+      --win: #15803d;
+      --lose: #b91c1c;
+      --draw: #a16207;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #14161a;
+        --card: #1e2127;
+        --text: #e8eaed;
+        --muted: #9aa0a6;
+        --border: #30343c;
+        --accent: #818cf8;
+        --win: #4ade80;
+        --lose: #f87171;
+        --draw: #facc15;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    main {
+      width: 100%;
+      max-width: 520px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+    }
+
+    h1 { margin: 0 0 4px; font-size: 1.6rem; }
+    .subtitle { margin: 0 0 24px; color: var(--muted); font-size: 0.95rem; }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .score {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 4px;
+    }
+    .score .label { font-size: 0.8rem; color: var(--muted); }
+    .score .value { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    .arena {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      margin-bottom: 16px;
+      min-height: 120px;
+    }
+    .hand { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .hand .emoji { font-size: 4rem; line-height: 1; }
+    .hand .who { font-size: 0.85rem; color: var(--muted); }
+    .vs { font-weight: 700; color: var(--muted); }
+
+    .shake { animation: shake 0.5s ease-in-out; }
+    @keyframes shake {
+      0%, 100% { transform: translateY(0); }
+      25%, 75% { transform: translateY(-14px); }
+      50% { transform: translateY(0); }
+    }
+
+    .result {
+      font-size: 1.25rem;
+      font-weight: 700;
+      min-height: 1.6em;
+      margin-bottom: 4px;
+    }
+    .result.win { color: var(--win); }
+    .result.lose { color: var(--lose); }
+    .result.draw { color: var(--draw); }
+    .detail { color: var(--muted); min-height: 1.4em; margin-bottom: 24px; }
+
+    .choices { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; }
+    .choice {
+      flex: 1;
+      max-width: 130px;
+      padding: 14px 8px;
+      font: inherit;
+      background: transparent;
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.15s;
+    }
+    .choice:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-2px); }
+    .choice:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .choice:disabled { opacity: 0.5; cursor: default; }
+    .choice .emoji { display: block; font-size: 2.2rem; }
+    .choice .name { font-size: 0.9rem; }
+    .choice kbd {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0 5px;
+    }
+
+    .reset {
+      font: inherit;
+      font-size: 0.9rem;
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .history {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    .history li {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .history .win { background: var(--win); }
+    .history .lose { background: var(--lose); }
+    .history .draw { background: var(--draw); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Rock Paper Scissors</h1>
+    <p class="subtitle">Pick your move. The computer picks at random.</p>
+
+    <section class="scoreboard" aria-label="Score">
+      <div class="score"><div class="label">You</div><div class="value" id="score-player">0</div></div>
+      <div class="score"><div class="label">Draws</div><div class="value" id="score-draw">0</div></div>
+      <div class="score"><div class="label">Computer</div><div class="value" id="score-computer">0</div></div>
+    </section>
+
+    <section class="arena">
+      <div class="hand"><span class="emoji" id="hand-player">✊</span><span class="who">You</span></div>
+      <span class="vs">VS</span>
+      <div class="hand"><span class="emoji" id="hand-computer">✊</span><span class="who">Computer</span></div>
+    </section>
+
+    <div class="result" id="result" aria-live="polite"></div>
+    <div class="detail" id="detail"></div>
+
+    <section class="choices">
+      <button class="choice" data-move="rock"><span class="emoji">✊</span><span class="name">Rock</span><br><kbd>R</kbd></button>
+      <button class="choice" data-move="paper"><span class="emoji">✋</span><span class="name">Paper</span><br><kbd>P</kbd></button>
+      <button class="choice" data-move="scissors"><span class="emoji">✌️</span><span class="name">Scissors</span><br><kbd>S</kbd></button>
+    </section>
+
+    <button class="reset" id="reset">Reset score</button>
+
+    <ul class="history" id="history" aria-label="Recent rounds"></ul>
+  </main>
+
+  <script>
+    const MOVES = {
+      rock:     { emoji: "✊", beats: "scissors", verb: "crushes" },
+      paper:    { emoji: "✋", beats: "rock",     verb: "covers" },
+      scissors: { emoji: "✌️", beats: "paper",    verb: "cuts" },
+    };
+    const MOVE_NAMES = Object.keys(MOVES);
+    const KEYS = { r: "rock", p: "paper", s: "scissors" };
+    const MAX_HISTORY = 20;
+    const SHAKE_MS = 500;
+
+    const score = { player: 0, computer: 0, draw: 0 };
+    const history = [];
+    let busy = false;
+
+    const $ = (id) => document.getElementById(id);
+    const buttons = document.querySelectorAll(".choice");
+
+    function capitalize(s) {
+      return s[0].toUpperCase() + s.slice(1);
+    }
+
+    function decide(player, computer) {
+      if (player === computer) return "draw";
+      return MOVES[player].beats === computer ? "win" : "lose";
+    }
+
+    function render(outcome, player, computer) {
+      $("score-player").textContent = score.player;
+      $("score-computer").textContent = score.computer;
+      $("score-draw").textContent = score.draw;
+
+      const result = $("result");
+      const detail = $("detail");
+      result.className = "result";
+
+      if (outcome) {
+        $("hand-player").textContent = MOVES[player].emoji;
+        $("hand-computer").textContent = MOVES[computer].emoji;
+        result.classList.add(outcome);
+        if (outcome === "win") {
+          result.textContent = "You win!";
+          detail.textContent = `${capitalize(player)} ${MOVES[player].verb} ${computer}.`;
+        } else if (outcome === "lose") {
+          result.textContent = "You lose!";
+          detail.textContent = `${capitalize(computer)} ${MOVES[computer].verb} ${player}.`;
+        } else {
+          result.textContent = "It's a draw.";
+          detail.textContent = `You both picked ${player}.`;
+        }
+      } else {
+        $("hand-player").textContent = MOVES.rock.emoji;
+        $("hand-computer").textContent = MOVES.rock.emoji;
+        result.textContent = "";
+        detail.textContent = "";
+      }
+
+      $("history").innerHTML = history
+        .map((o) => `<li class="${o}" title="${o}"></li>`)
+        .join("");
+    }
+
+    function play(player) {
+      if (busy) return;
+      busy = true;
+      buttons.forEach((b) => (b.disabled = true));
+
+      const computer = MOVE_NAMES[Math.floor(Math.random() * MOVE_NAMES.length)];
+
+      // Shake both fists before revealing, like the real game.
+      const hands = [$("hand-player"), $("hand-computer")];
+      hands.forEach((h) => {
+        h.textContent = MOVES.rock.emoji;
+        h.classList.remove("shake");
+        void h.offsetWidth; // restart the animation
+        h.classList.add("shake");
+      });
+      $("result").textContent = "";
+      $("detail").textContent = "Rock… paper… scissors…";
+
+      setTimeout(() => {
+        const outcome = decide(player, computer);
+        if (outcome === "win") score.player++;
+        else if (outcome === "lose") score.computer++;
+        else score.draw++;
+
+        history.push(outcome);
+        if (history.length > MAX_HISTORY) history.shift();
+
+        render(outcome, player, computer);
+        buttons.forEach((b) => (b.disabled = false));
+        busy = false;
+      }, SHAKE_MS);
+    }
+
+    buttons.forEach((b) => b.addEventListener("click", () => play(b.dataset.move)));
+
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const move = KEYS[e.key.toLowerCase()];
+      if (move) play(move);
+    });
+
+    $("reset").addEventListener("click", () => {
+      if (busy) return;
+      score.player = score.computer = score.draw = 0;
+      history.length = 0;
+      render(null);
+    });
+  </script>
+</body>
+</html>
